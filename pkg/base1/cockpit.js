@@ -1456,6 +1456,8 @@ function full_scope(cockpit, $, po) {
                       enumerable: false, writable: false },
             "call": { value: function(name, args) { return client.call(path, iface, name, args); },
                       enumerable: false, writable: false },
+            "as": { value: function(new_iface) { return client.proxy(new_iface, path, options); },
+                      enumerable: false, writable: false },
             "data": { value: { }, enumerable: false }
         });
 
