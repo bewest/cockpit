@@ -83,20 +83,33 @@ define([
         });
     }
 
-    function with_systemd_manager(done) {
+    function with_systemd_manager(done, fail) {
         if (!systemd_manager) {
             systemd_client = cockpit.dbus("org.freedesktop.systemd1", { superuser: "try" });
             systemd_manager = systemd_client.proxy("org.freedesktop.systemd1.Manager",
                                                    "/org/freedesktop/systemd1");
             wait_valid(systemd_manager, function() {
-                systemd_manager.Subscribe().
-                    fail(function (error) {
-                        if (error.name != "org.freedesktop.systemd1.AlreadySubscribed" &&
-                            error.name != "org.freedesktop.DBus.Error.FileExists")
-                            console.warn("Subscribing to systemd signals failed", error);
-                    });
+
+                if (systemd_manager.valid && systemd_manager.Subscribe) {
+                    (systemd_manager.Subscribe()).
+                        fail(function (error) {
+                            if (error.name != "org.freedesktop.systemd1.AlreadySubscribed" &&
+                                error.name != "org.freedesktop.DBus.Error.FileExists")
+                                console.warn("Subscribing to systemd signals failed", error);
+                        });
+                }
+
             });
         }
+
+        if (systemd_manager) {
+            if (systemd_manager.valid && systemd_manager.Subscribe) {
+                return wait_valid(systemd_manager, done);
+            } else {
+                return wait_valid(systemd_manager, fail);
+            }
+        }
+
         wait_valid(systemd_manager, done);
     }
 
@@ -171,6 +184,8 @@ define([
                     self.exists = false;
                     $(self).triggerHandler('changed');
                 });
+        }, function ( ) {
+          console.warn('failed loading systemd');
         });
 
         function refresh() {
